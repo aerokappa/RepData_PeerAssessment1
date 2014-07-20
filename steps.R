@@ -1,168 +1,113 @@
-# Reproducible Research: Peer Assessment 1
-## Karthik Palaniappan
+#
+# This is a file that contains the exact same code in the R markdown - this
+# is to test out the script before it is inserted into the Rmd file.
+#
 
-This is my first experiment at literate statistical programming.  All thanks to 
-Roger Peng.
+stepsData <- read.csv("activity.csv", header=TRUE, na.strings="NA",
+                      colClasses=c("integer","character","integer"))
 
-Thanks also due to you, my evaluator!
+# Merge the second and third columns to get the date in POSIXlt format
 
-
-## Loading and preprocessing the data
-In this section, we will load the activity data into the system.  I'm also going
-to experiment using the "cache=TRUE" option so that the code doesn't recompile
-unnecessarily.
-
-```{r, cache=TRUE}
-
-stepsData <- read.csv("activity.csv", header=TRUE, na.strings="NA")
-```
-
-Merge the second and third columns to get the date in POSIXlt format
-
-```{r,cache=TRUE}
 stepsData$datetime <- paste(stepsData$date,formatC(stepsData$interval,digits=3,
                                                    flag="0"))
 stepsData$datetime <- strptime(stepsData$datetime, "%Y-%m-%d %H%M")
-```
 
-Convert the original date and time columns to factors to enable manipulation by
-date and time
+# Convert the original date and time columns to factors to enable manipulation by
+# date and time
 
-```{r, cache=TRUE}
 stepsData$date <- as.factor(stepsData$date)
 stepsData$interval <- as.factor(stepsData$interval)
-```
 
-Find indices corresponding to non-NA values
+#
+# Find indices corresponding to non-NA values
+#
 
-```{r, cache=TRUE}
 nonNAvalues <- complete.cases(stepsData$steps)
-```
 
-## What is mean total number of steps taken per day?
-
-I want to learn how to use gg plot2 better, so I'm going to use that for the 
-pictures.
-
-First, let us segregate the number of steps by day, after accounting for non NA
-values.
-
-```{r,cache=TRUE}
+#
+# Make a histogram of the total number of steps taken per day
+#
 nSteps <- tapply(stepsData$steps[nonNAvalues],stepsData$date[nonNAvalues],sum)
 nSteps <- data.frame(date=as.Date(names(nSteps)),steps=nSteps)
-```
 
-
-Now, let's plot the number of steps per day as a histogram.
-
-```{r,cache=TRUE}
 library(ggplot2)
 g <- ggplot(nSteps,aes(x=steps))
 g + geom_histogram(binwidth=1000,color="blue",fill="dark grey")
-```
 
-We will use R's summary function to do this - because this gives us much
-more information than just the mean and the median.
-
-```{r,cache=TRUE}
+#
+# Report a summary of the data - showing the mean and median, among other things
+#
 summary(nSteps)
-```
 
-
-## What is the average daily activity pattern?
-
-get some sense of average steps per interval
-
-```{r,cache=TRUE}
+#
+# get some sense of average steps per interval
+#
 nStepsInterval <- tapply(stepsData$steps[nonNAvalues],stepsData$interval[nonNAvalues],mean)
 nStepsInterval <- data.frame(interval=formatC(as.integer(names(nStepsInterval)),digits=3,flag="0"),
                              steps=nStepsInterval)
 nStepsInterval$interval <- as.POSIXct(strptime(paste(nSteps$date[length(nSteps$date)],
                                           nStepsInterval$interval),
                                     "%Y-%m-%d %H%M"))
-```
 
-time series plot
-
-```{r,cache=TRUE}
+#
+# time series plot
+#
 g2 <- ggplot(nStepsInterval,aes(x=interval,y=steps))
 g2 + geom_line() +labs(title="average number of steps as a function of the time interval") +
         scale_x_datetime(labels=c("00:00","06:00","12:00","18:00","00:00"))
-```
 
-Find the interval that corresponds to the maximum number of steps
-```{r,cache=TRUE}
+#
+#  Find the interval that corresponds to the maximum number of steps
+#
 maxLocation <- which.max(nStepsInterval$steps)
-```
-
-The maximum number of steps is taken at the interval
-```{r}
 nStepsInterval$interval[maxLocation[[1]]]
-```
-
-The maximum number of steps is given by:
-
-```{r}
 nStepsInterval$steps[maxLocation[[1]]]
-```
 
-
-## Imputing missing values
-
-Find the number of NA's in the original data set.
-
-```{r}
+#
+#  Find the number of NA's in the original data set.
+#
 sum(is.na(stepsData$steps))
-```
 
-Impute missing values by replacing NAs with the mean for that particular time 
-interval as calculated previously and fill it in a new dataset
-
-```{r,cache=TRUE}
+#
+#  Impute missing values by replacing NAs with the mean for that particular time 
+#  interval as calculated previously and fill it in a new dataset
+#
 filledStepsData <- stepsData
 naValues <- is.na(filledStepsData$steps)
 filledStepsData$steps[naValues] <- 
         nStepsInterval$steps[as.character(filledStepsData$interval[naValues])]
-```
 
-Make a histogram of the total number of steps taken per day
-
-```{r,cache=TRUE}
+#
+# Make a histogram of the total number of steps taken per day
+#
 nSteps2 <- tapply(filledStepsData$steps,filledStepsData$date,sum)
 nSteps2 <- data.frame(date=as.Date(names(nSteps2)),steps=nSteps2)
 
 library(ggplot2)
-g3 <- ggplot(nSteps2,aes(x=steps))
+g3 <- ggplot(nSteps,aes(x=steps))
 g3 + geom_histogram(binwidth=1000,color="blue",fill="dark grey")
-```
 
-Report a summary of the data - showing the mean and median, among other things
-
-```{r}
+#
+# Report a summary of the data - showing the mean and median, among other things
+#
 summary(nSteps2)
-```
 
-## Are there differences in activity patterns between weekdays and weekends?
-
-
-classify days as weekday days and weekend days
-
-```{r}
+#
+# classify days as weekday days and weekend days
+#
 filledStepsData$isWeekend <- as.factor(
         weekdays(filledStepsData$datetime) %in% c("Saturday","Sunday"))
 levels(filledStepsData$isWeekend)=c("weekday","weekend")
-```
 
 
-split the data as weekday data and weekend data
-
-```{r}
+#
+#  split the data as weekday data and weekend data
+#
 separatedStepsData <- split(filledStepsData,filledStepsData$isWeekend)
-```
 
-get some sense of average steps per interval
-
-```{r,cache=TRUE}
+#
+# get some sense of average steps per interval
+#
 nStepsIntervalMWF <- tapply(separatedStepsData$weekday$steps,
                             separatedStepsData$weekday$interval,mean)
 
@@ -178,14 +123,11 @@ nStepsIntervalFinal <- data.frame(interval=
 nStepsIntervalFinal$interval <- as.POSIXct(strptime(paste(nSteps$date[length(nSteps$date)],
                                                      nStepsIntervalFinal$interval),
                                                "%Y-%m-%d %H%M"))
-```
 
-
-time series plot
-
-```{r}
+#
+# time series plot
+#
 g4 <- ggplot(nStepsIntervalFinal,aes(x=interval,y=steps))
 g4 + geom_line() +labs(title="average number of steps as a function of the time interval") +
         scale_x_datetime(labels=c("00:00","06:00","12:00","18:00","00:00"))+
         facet_wrap(~ weekday, nrow=1, ncol=2)
-```
